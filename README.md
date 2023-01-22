@@ -21,6 +21,10 @@
 
   - [1.8 并发编程](#18-并发编程)
 
+- [2. 重构](#2-重构)
+  
+  - [2.1 函数](#21-函数)
+
 # 0. 面向对象设计与实现
   
   - 划分职责识别类
@@ -216,5 +220,170 @@
       - 避免使用共享数据，使用对象的副本。
       
       - 线程尽可能地独立，不与其他线程共享数据。
+
+# 2. 重构
+
+  - ## 2.1 函数
+
+    - Extract Method (提炼函数)
+
+      - 你有一段代码可以被组织在一起并独立出来，将这段代码放进一个独立函数中，并让函数名称解释该函数的用途。
+
+        ```java
+        void printOwing(double amount) {
+            printBanner();
+
+            // print details
+            System.out.println("name:" + _name);
+            System.out.println("amount" + _amount);
+        }
+        ```
+
+        ```java
+        void printOwing(double amount) {
+            printBanner();
+            printDetails(amount);
+        }
+
+        // 提炼函数
+        void printDetails(double amount) {
+            System.out.println("name" + _name);
+            System.out.println("amount" + amount);
+        }
+        ```
+
+        注意目标代码中的局部变量。如果需要对局部变量进行再次赋值并使用，提炼出的函数可以使用参数以及返回值。
+
+    - Replace Nested Conditional with Guard Clauses（以卫语句取代嵌套表达式）
+
+      ```java
+        double getPayAmount() {
+            double result;
+            if (_isDead) {
+                result = deadAmount();
+            }
+            else {
+                if (_isSeparted) {
+                    result = separatedAmount();
+                }
+                else {
+                    if (_isRetired) result = retiredAmount();
+                    else result = normalPayAmount();
+                }
+            }
+        }
+      ```
+
+      使用卫语句：
+
+      ```java
+        double getPayAmount() {
+            if (_isDead) return deadAmount();
+            if (_isSeparated) return separatedAmount();
+            if (_isRetired) return retiredAmount();
+            return normalPayAmount();
+        }
+      ```
+
+      条件表达式通常有两种表现形式，一种是所有分支都是正常行为，另一种是只有一种是正常行为，其他都是特殊情况。
+      对于第一种就应该使用if-else语句，而对于第二种就应当使用卫语句。卫语句通常从函数中返回或抛异常。
+
+    - 引入参数对象：
+
+      ```javascript
+        function amountInvoiced(startDate, endDate)
+
+        // ====>
+
+        function amountInvoiced(dateRange)
+      ```
+
+    - 以对象取代基本类型：
+
+      ```javascript
+        order.filter(o => 'high' === o.priority
+          || 'rush' === o.priority)
+
+        // =====>
+
+        order.filter(o => o.priority.hightThen(new Priority('normal')))
+      ```
+
+
+    - 拆分循环：
+
+      ```javascript
+        let averageAge = 0
+        let totalSalary = 0
+        for (const p of people) {
+          averageAge += p.age
+          totalSalary = p.salary
+        }
+        averageAge /= people.length
+
+        // ======>
+
+        let averageAge = 0
+        for (const p of people) {
+          averageAge += p.age
+        }
+        averageAge /= people.length
+
+        let totalSalary = 0
+        for (const p of people) {
+          totalSalary = p.salary
+        }
+      ```
+
+      也许上面的代码对于很多人来说都是一种坏味道, 甚至我现在也这样觉得, 因为理论上多执行了一次循环, 但是往往在很多的场景中, 循环并不是性能的瓶颈, 分开书写之后能带来更好的维护性和可读性, 也能方便的拆分代码逻辑。
+
+    -  以多态取代条件表达式：
+
+        ```javascript
+          switch(bird.type) {
+            case 'a':
+              return 'a type'
+            case 'b':
+              return 'b type'
+            default:
+              return 'default'
+          }
+
+          // ====>
+
+          class AType {
+            getType() {
+              return 'a type'
+            }
+          }
+
+          class BType {
+            getType() {
+              return 'b type'
+            }
+          }
+        ```
+
+    - 将查询函数和修改函数分离：
+      
+      ```javascript
+        function getTotalOutstandingAndSendBill() {
+          const result = customer.invoices.reduce((total, each) => each.amount + total, 0)
+          sendBill()
+          return result;
+        }
+
+        // ====>
+
+        function totalOutstanding() {
+          return customer.invoices.reduce((total, each) => each.amount + total, 0)
+        }
+        function sendBill() {
+          sendBill()
+        }
+      ```
+
+      原书中有一句话我印象深刻, 明确表现出有副作用与无副作用两种函数之间的差异, 是个很好的想法。
+      任何有返回值的函数, 都不应该有看得到的副作用–命令与查询分离。
 
       
