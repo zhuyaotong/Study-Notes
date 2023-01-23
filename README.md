@@ -76,14 +76,203 @@
     
     - 使用描述性的名称  
       
-      - 别害怕长名称，长而具有描述性的名称，要比短而令人费解的名称好，要比描述性的长注释好。
+      - 别害怕长名称，长而具有描述性的名称，要比短而令人费解的名称好，要比描述性的长注释好。通过阅读名字，就可以知道它为什么存在，它是什么，它做什么，它怎么用。
+        
+        ```java
+          // before
+          int d; // elapsed time in days
+          // after
+          int elapsedTimeInDays;
+        ```
+
+        ```java
+          // before
+          public List<int[]> getThem() {
+              List<int[]> list1 = new ArrayList<int[]>();
+              for (int[] x : theList){
+                  if (x[0] == 4)
+                  list1.add(x);
+              }
+              return list1;
+          }
+          // after
+          public List<Cell> getFlaggedCells() {
+              List<Cell> flaggedCells = new ArrayList<Cell>();
+              for (Cell cell : gameBoard){
+                  if (cell.isFlagged())
+                      flaggedCells.add(cell);
+              }
+              return flaggedCells;
+          }
+        ```
+      
+      - 做有意义的区分
+        - 尽量不以数字系列命名，如下：
+          
+          ```java
+            public static void copyChars(char a1[], char a2[]) {
+                for (int i = 0; i < a1.length; i++) {
+                    a2[i] = a1[i];
+                }
+            }
+          ```
+
+          可以修改如下:
+
+          ```java
+            public static void copyChars(char source[], char destination[]) {
+              for (int i = 0; i < source.length; i++) {
+                  destination[i] = source[i];
+              }
+            }
+          ```
+
+      - 使用读的出的名字
+
+        - 编程是种社会活动。一个可以读的名字，能使人的记忆和交流更方便。
+
+          ```java
+            // before
+            class DtaRcrd102 {
+                private Date genymdhms;
+                private Date modymdhms;
+                private final String pszqint = "102";
+                /* ... */
+            };
+
+            // after
+            class Customer {
+                private Date generationTimestamp;
+                private Date modificationTimestamp;;
+                private final String recordId = "102";
+                /* ... */
+            };
+          ```
+
+      - 使用可搜索的名字
+
+        > 尽量不要用单字母和数字作为名字，很难被搜索。如英文字母e，是最常用的字母。
+        单字母可以用于局部变量。换而言之，名字的长短最好与它作用范围的大小成正比。
+        如果变量在代码的多处被使用，应该取一个好搜索的名字。
+
+        ```java
+          // before
+          for (int j=0; j<34; j++) {
+              s += (t[j]*4)/5;
+          }
+          // after
+          int realDaysPerIdealDay = 4;
+          const int WORK_DAYS_PER_WEEK = 5;
+          int sum = 0;
+          for (int j=0; j < NUMBER_OF_TASKS; j++) {
+              int realTaskDays = taskEstimate[j] * realDaysPerIdealDay;
+              int realTaskWeeks = (realdays / WORK_DAYS_PER_WEEK);
+              sum += realTaskWeeks;
+          }
+        ```
 
   - ## 1.2 函数
+
+    - 方法名
+      
+      - 方法名应该是个动词。对属性访问器、修改器和断言，应该加上get、set、is前缀。
+
+        ```java
+          string name = employee.getName();
+          customer.setName("mike");
+          if (paycheck.isPosted())...
+        ```
+
+      - 重载构造器时，使用描述参数的静态工厂方法。
+
+        ```java
+          // before
+          Complex fulcrumPoint = new Complex(23.0);
+          // after, this is better
+          Complex fulcrumPoint = Complex.FromRealNumber(23.0);
+        ```
+
     - 只做一件事
       
       - 如果函数只是做了该函数名下同一抽象层上的步骤，则函数只做了一件事。
       
       - 要判断函数是否不止做了一件事，就是要看是否能再拆出一个函数。
+
+    - 添加有意义的语境
+
+      需要用良好命名的类、函数或者名称空间，来为读者提供语境。如果没有，就只能加前缀了。
+
+      没语境的代码：
+
+      ```java
+        private void printGuessStatistics(char candidate, int count) {
+          String number;
+          String verb;
+          String pluralModifier;
+          if (count == 0) {
+              number = "no";
+              verb = "are";
+              pluralModifier = "s";
+          } else if (count == 1) {
+              number = "1";
+              verb = "is";
+              pluralModifier = "";
+          } else {
+              number = Integer.toString(count);
+              verb = "are";
+              pluralModifier = "s";
+          }
+          String guessMessage = String.format(
+              "There %s %s %s%s", verb, number, candidate, pluralModifier
+              );
+          print(guessMessage);
+        }
+      ```
+
+      有语境的代码：
+
+      ```java
+        public class GuessStatisticsMessage {
+          private String number;
+          private String verb;
+          private String pluralModifier;
+          
+          public String make(char candidate, int count) {
+              createPluralDependentMessageParts(count);
+              return String.format(
+                      "There %s %s %s%s",
+                      verb, number, candidate, pluralModifier );
+          }
+          
+          private void createPluralDependentMessageParts(int count) {
+              if (count == 0) {
+                  thereAreNoLetters();
+              } else if (count == 1) {
+                  thereIsOneLetter();
+              } else {
+                  thereAreManyLetters(count);
+              }
+          }
+          
+          private void thereAreManyLetters(int count) {
+              number = Integer.toString(count);
+              verb = "are";
+              pluralModifier = "s";
+          }
+          
+          private void thereIsOneLetter() {
+              number = "1";
+              verb = "is";
+              pluralModifier = "";
+          }
+          
+          private void thereAreNoLetters() {
+              number = "no";
+              verb = "are";
+              pluralModifier = "s";
+          }
+        }
+      ```
     
     - 参数
       
@@ -121,6 +310,25 @@
               do();
           } catch (Exception e) {
               handle();
+          }
+        ```
+
+        ```java
+          public void delete(Page page) {
+              try {
+                  deletePageAndAllReferences(page);
+              }
+              catch (Exception e) {
+                  logError(e);
+              }
+          }
+          private void deletePageAndAllReferences(Page page) throws Exception {
+              deletePage(page);
+              registry.deleteReference(page.name);
+              configKeys.deleteKey(page.name.makeKey());
+          }
+          private void logError(Exception e) {
+              logger.log(e.getMessage());
           }
         ```
 
@@ -174,6 +382,196 @@
 
         ```
 
+    - 短小
+
+      ```java
+        public static String testableHtml(PageData pageData, boolean includeSuiteSetup) throws Exception {
+              WikiPage wikiPage = pageData.getWikiPage();
+              StringBuffer buffer = new StringBuffer();
+              if (pageData.hasAttribute("Test")) {
+                  if (includeSuiteSetup) {
+                      WikiPage suiteSetup =
+                          PageCrawlerImpl.getInheritedPage(
+                          SuiteResponder.SUITE_SETUP_NAME, wikiPage
+                      );
+                      if (suiteSetup != null) {
+                          WikiPagePath pagePath =
+                              suiteSetup.getPageCrawler().getFullPath(suiteSetup);
+                          String pagePathName = PathParser.render(pagePath);
+                          buffer.append("!include -setup .")
+                              .append(pagePathName)
+                              .append("\n");
+                      }
+                  }
+                  WikiPage setup =
+                  PageCrawlerImpl.getInheritedPage("SetUp", wikiPage);
+                  if (setup != null) {
+                      WikiPagePath setupPath =
+                          wikiPage.getPageCrawler().getFullPath(setup);
+                      String setupPathName = PathParser.render(setupPath);
+                      buffer.append("!include -setup .")
+                          .append(setupPathName)
+                          .append("\n");
+                  }
+              }
+              buffer.append(pageData.getContent());
+              if (pageData.hasAttribute("Test")) {
+                  WikiPage teardown =
+                  PageCrawlerImpl.getInheritedPage("TearDown", wikiPage);
+                  if (teardown != null) {
+                      WikiPagePath tearDownPath =
+                          wikiPage.getPageCrawler().getFullPath(teardown);
+                      String tearDownPathName = PathParser.render(tearDownPath);
+                      buffer.append("\n")
+                          .append("!include -teardown .")
+                          .append(tearDownPathName)
+                          .append("\n");
+                  }
+                  if (includeSuiteSetup) {
+                      WikiPage suiteTeardown =
+                          PageCrawlerImpl.getInheritedPage(
+                          SuiteResponder.SUITE_TEARDOWN_NAME,
+                          wikiPage
+                      );
+                      if (suiteTeardown != null) {
+                          WikiPagePath pagePath =
+                              suiteTeardown.getPageCrawler().getFullPath (suiteTeardown);
+                          String pagePathName = PathParser.render(pagePath);
+                          buffer.append("!include -teardown .")
+                              .append(pagePathName)
+                              .append("\n");
+                      }
+                  }
+              }
+              pageData.setContent(buffer.toString());
+              return pageData.getHtml();
+        }
+      ```
+
+      这容易看懂吗？来改善一次：
+
+      ```java
+        public static String renderPageWithSetupsAndTeardowns(PageData pageData, boolean isSuite) throws Exception {
+            boolean isTestPage = pageData.hasAttribute("Test");
+            if (isTestPage) {
+                WikiPage testPage = pageData.getWikiPage();
+                StringBuffer newPageContent = new StringBuffer();
+                includeSetupPages(testPage, newPageContent, isSuite);
+                newPageContent.append(pageData.getContent());
+                includeTeardownPages(testPage, newPageContent, isSuite);
+                pageData.setContent(newPageContent.toString());
+            }
+            return pageData.getHtml();
+        }
+      ```
+
+      这个好点了。但还是太长了，可以再改善一下：
+
+      ```java
+        public static String renderPageWithSetupsAndTeardowns(
+          PageData pageData, boolean isSuite) throws Exception {
+          if (isTestPage(pageData))
+              includeSetupAndTeardownPages(pageData, isSuite);
+          return pageData.getHtml();
+        }
+      ```
+    
+    - switch语句
+      
+      switch天生要做许多事。
+
+      ```java
+        public Money calculatePay(Employee e)
+          throws InvalidEmployeeType {
+              switch (e.type) {
+              case COMMISSIONED:
+                  return calculateCommissionedPay(e);
+              case HOURLY:
+                  return calculateHourlyPay(e);
+              case SALARIED:
+                  return calculateSalariedPay(e);
+              default:
+                  throw new InvalidEmployeeType(e.type);
+          }
+        }
+      ```
+
+      以上代码有四个问题：
+
+      1. 太长，而且出现新雇员类型时，它会变更长
+      2. 它做了很多事
+      3. 它违背了单一权责原则（Single Responsibility Principle，SRP）
+      4. 它违反了开放闭合原则（Open Closed Principle，OCP），每次添加新类型时，就要修改它。
+      
+      这个问题的解决方案，就是将switch埋到抽象工厂下，不让任何人看到。
+
+      ```java
+        public abstract class Employee {
+          public abstract boolean isPayday();
+          public abstract Money calculatePay();
+          public abstract void deliverPay(Money pay);
+        }
+        -----------------
+        public interface EmployeeFactory {
+            public Employee makeEmployee(EmployeeRecord r) throws InvalidEmployeeType;
+        }
+        -----------------
+        public class EmployeeFactoryImpl implements EmployeeFactory {
+            public Employee makeEmployee(EmployeeRecord r) throws InvalidEmployeeType {
+                switch (r.type) {
+                case COMMISSIONED:
+                    return new CommissionedEmployee(r) ;
+                case HOURLY:
+                    return new HourlyEmployee(r);
+                case SALARIED:
+                    return new SalariedEmploye(r);
+                default:
+                    throw new InvalidEmployeeType(r.type);
+                }
+            }
+        }
+      ```
+
+    - 无副作用
+
+      尽量不要在函数中，更改参数的值。
+
+        ```java
+          public class UserValidator {
+            private Cryptographer cryptographer;
+            public boolean checkPassword(String userName, String password) {
+                User user = UserGateway.findByName(userName);
+                if (user != User.NULL) {
+                    String codedPhrase = user.getPhraseEncodedByPassword();
+                    String phrase = cryptographer.decrypt(codedPhrase, password);
+                    if ("Valid Password".equals(phrase)) {
+                        Session.initialize();
+                        return true;
+                    }
+                }
+                return false;
+            }
+          }
+        ```
+
+        Session.initialize(); 就是这一行产生的副作用。
+
+    - 分割指令与询问
+
+      函数要么做什么事情，要么回答什么问题。不要混淆。
+
+      ```java
+        // 如果有这样子一个函数
+        public boolean set(String attribute, String value);
+        // 被这样子调用，是很让人疑惑的
+        if (set("username", "unclebob"))...
+        // 应该这样子写：
+        if (attributeExists("username")) {
+            setAttribute("username", "unclebob");
+            ...
+        }
+      ```
+
   - ## 1.3 注释
     - 用代码来阐述
       - 创建一个与注释所言同一事物的函数即可。
@@ -206,6 +604,35 @@
     
     - 数据结构：没有明显的行为（接口），暴露数据。如DTO（Data Transfer Objects）、Entity。
 
+    - 数据抽象
+      
+      - 具象点
+
+      ```java
+        public class Point {
+          public double x;
+          public double y;
+        }
+      ```
+
+      -  抽象点
+
+        ```java
+          public interface Point {
+            double getX();
+            double getY();
+            void setCartesian(double x, double y);
+            double getR();
+            double getTheta();
+            void setPolar(double r, double theta);
+          }
+        ```
+
+        抽象点的好处在于，它不仅仅是在变量之上放了一个函数层那么简单。
+
+        隐藏关乎抽象。
+
+        也就是为了让用户不需要了解数据的实现就能操作数据本体。
 
   - ## 1.5 单元测试
 
@@ -225,6 +652,98 @@
 
       - timely: 及时编写测试代码。单元测试应该在生产代码之前编写，否则生产代码会变得难以测试。
 
+    - 整洁的测试
+
+      三个要素：可读性，可读性和可读性。
+
+      ```java
+        public void testGetPageHieratchyAsXml() throws Exception {
+            crawler.addPage(root, PathParser.parse("PageOne"));
+            crawler.addPage(root, PathParser.parse("PageOne.ChildOne"));
+            crawler.addPage(root, PathParser.parse("PageTwo"));
+            request.setResource("root");
+            request.addInput("type", "pages");
+            Responder responder = new SerializedPageResponder();
+            SimpleResponse response =
+                (SimpleResponse) responder.makeResponse(
+                                    new FitNesseContext(root), request);
+            String xml = response.getContent();
+            assertEquals("text/xml", response.getContentType());
+            assertSubString("<name>PageOne</name>", xml);
+            assertSubString("<name>PageTwo</name>", xml);
+            assertSubString("<name>ChildOne</name>", xml);
+        }
+
+        public void testGetPageHieratchyAsXmlDoesntContainSymbolicLinks() throws Exception {
+            WikiPage pageOne = crawler.addPage(root, PathParser.parse("PageOne"));
+            crawler.addPage(root, PathParser.parse("PageOne.ChildOne"));
+            crawler.addPage(root, PathParser.parse("PageTwo"));
+            PageData data = pageOne.getData();
+            WikiPageProperties properties = data.getProperties();
+            WikiPageProperty symLinks = properties.set(SymbolicPage.PROPERTY_NAME);
+            symLinks.set("SymPage", "PageTwo");
+            pageOne.commit(data);
+            request.setResource("root");
+            request.addInput("type", "pages");
+            Responder responder = new SerializedPageResponder();
+            SimpleResponse response =
+                (SimpleResponse) responder.makeResponse(
+                                        new FitNesseContext(root), request);
+            String xml = response.getContent();
+            assertEquals("text/xml", response.getContentType());
+            assertSubString("<name>PageOne</name>", xml);
+            assertSubString("<name>PageTwo</name>", xml);
+            assertSubString("<name>ChildOne</name>", xml);
+            assertNotSubString("SymPage", xml);
+        }
+
+        public void testGetDataAsHtml() throws Exception {
+            crawler.addPage(root, PathParser.parse("TestPageOne"), "test page");
+            request.setResource("TestPageOne");
+            request.addInput("type", "data");
+            Responder responder = new SerializedPageResponder();
+            SimpleResponse response =
+                (SimpleResponse) responder.makeResponse(
+                                    new FitNesseContext(root), request);
+            String xml = response.getContent();
+            assertEquals("text/xml", response.getContentType());
+            assertSubString("test page", xml);
+            assertSubString("<Test", xml);
+        }
+      ```
+
+      重构后：
+
+      ```java
+        public void testGetPageHierarchyAsXml() throws Exception {
+            makePages("PageOne", "PageOne.ChildOne", "PageTwo");
+            submitRequest("root", "type:pages");
+            assertResponseIsXML();
+            assertResponseContains(
+                "<name>PageOne</name>", "<name>PageTwo</name>"，"<name>ChildOne</name>"
+            );
+        }
+        public void testSymbolicLinksAreNotInXmlPageHierarchy() throws Exception {
+            WikiPage page = makePage("PageOne");
+            makePages("PageOne.ChildOne", "PageTwo");
+            addLinkTo(page, "PageTwo", "SymPage");
+            submitRequest("root", "type:pages");
+            assertResponseIsXML();
+            assertResponseContains(
+                "<name>PageOne</name>", "<name>PageTwo</name>", "<name>ChildOne</name>"
+            );
+            assertResponseDoesNotContain("SymPage");
+        }
+        public void testGetDataAsXml() throws Exception {
+            makePageWithContent("TestPageOne", "test page");
+            submitRequest("TestPageOne", "type:data");
+            assertResponseIsXML();
+            assertResponseContains("test page", "<Test");
+        }
+      ```
+
+      **重构后，这些测试呈现了构造-操作-检验模式。每个测试都该这样子。**
+
   - ## 1.6 类
 
     - 类应该短小
@@ -243,6 +762,21 @@
 
       - 有时应用程序也需要负责确定何时创建对象，我们可以使用抽象工厂模式让应用自行控制何时创建对象，但构造能力在工厂实现类里，与使用部分分开。
 
+      - 将关注的方面分离开，是软件技艺中最古老也是最重要的设计技巧。
+        然而大多数程序，都没有做分离处理，如下:
+
+        ```java
+          public Service getService() {
+            if (service == null)
+                service = new MyServiceImpl(...); // Good enough default for most cases?
+            return service;
+          }
+        ```
+
+        这段代码虽然是所谓的延时构造、赋值，有一些好处。但是我们也得到 MyServiceImpl 构造函数所需要的一切的硬编码依赖。
+
+
+
 
   - ## 1.8 并发编程
     
@@ -255,6 +789,17 @@
       - 避免使用共享数据，使用对象的副本。
       
       - 线程尽可能地独立，不与其他线程共享数据。
+
+        ```java
+          public class X {
+            private int lastIdUsed;
+            public int getNextId() {
+                return ++lastIdUsed;
+            }
+          }
+        ```
+
+        如果两个线程中共享这个实例对象，那么getNextId返回的结果就有可能不是我们想要的。
 
 # 2. 重构
 
