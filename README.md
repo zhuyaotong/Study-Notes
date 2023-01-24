@@ -33,6 +33,11 @@
 
 - [3. 高效学习](#3-高效学习)
   - [3.1 如何学习和阅读代码](#31-如何学习和阅读代码)
+
+- [4. 规范](#4-规范)
+
+  - [4.1 日志规范](#41-日志规范)
+
   
 # 0. 面向对象设计与实现
   
@@ -1121,4 +1126,189 @@
               - debug 跟踪一下代码是了解代码在执行中发生了什么的最好方式。
 
 
-    
+      
+# 4. 规范
+
+  - ## 4.1 日志规范
+
+    - 日志工具
+      
+      项目中仅使用抽象日志框架来处理日志，**不得**直接使用Log4J或LogBack，建议使用[Slf4J](http://www.slf4j.org/)。具体的日志框架实现，建议使用[LogBack](http://logback.qos.ch/)。
+
+            
+      在Maven项目的依赖中，如果间接依赖了不同的日志框架，需要exclude掉，或者它们仅能出现在test的scope中。
+
+      以使用Slf4j和LogBack为例，如果有第三方库依赖了Apache Commons Logging或者Log4J框架，则可进行如下配置：
+
+      1. 添加Slf4J对其他框架的支持
+          ```xml
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+                <version>1.7.5</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>log4j-over-slf4j</artifactId>
+                <version>1.7.5</version>
+            </dependency>
+          ```
+        
+                
+      2. 排除掉第三方库中的依赖，以Apache Commons Logging为例，在`<dependency>`中添加如下内容：
+
+      ```xml
+      <exclusions>
+          <exclusion>
+              <groupId>commons-logging</groupId>
+              <artifactId>commons-logging</artifactId>
+          </exclusion>
+      </exclusions>
+      ```
+
+
+    - Logger
+
+      在使用`Logger`时，需要用如下方式在类中定义Logger对象：
+
+      ```java
+          private static final Logger logger = LoggerFactory.getLogger(xxx.class);
+      ```
+
+      如果有确定的日志名，则可以直接指定日志名：
+
+      ```java
+          private static final Logger logger = LoggerFactory.getLogger("日志名");
+      ```
+            
+      输出日志时，**不得**使用字符串拼接的方式，即：
+
+      ```java
+          logger.info("foo" + bar);
+      ```
+
+      需要使用以下方式，避免不必要的`toString`和字符串拼接操作：
+
+      ```java
+          logger.info("foo{}", bar);
+      ```
+
+      Slf4J的方法支持可变参数，可以添加任意数量的{}，且无需在输出日志前进行isXXXEnabled判断。
+
+      如果使用Apache Commons Logging或者Log4J，需要在输出之前进行判断，例如：
+
+      ```java
+          if (logger.isInfoEnabled()) {
+              logger.info("foo");
+          }
+      ```
+
+      建议对`ERROR`和`WARN`级别以外的日志都增加此判断。
+
+      为了保证异常信息能够输出完整的异常堆栈，必须使用支持Throwable参数的方法输出异常，同时选择`ERROR`级别输出：
+
+      ```java
+          logger.error("处理XXX业务时发生异常", e);
+      ```
+
+      使用`+`拼接描述和异常对象，这样会丢失异常堆栈，因此**严禁**使用以下方法：
+
+      ```java
+          logger.error("处理XXX业务时发生异常" + e);
+      ```
+
+
+    - 日志文件
+
+        - 日志分为以下几类：
+
+          1. 业务日志
+          2. 错误日志，统一将`ERROR`级别的日志汇总到一个日志中
+          3. 摘要日志，以`-digest`作为主文件名后缀
+          4. 统计日志，以`-stat`作为主文件名后缀   
+
+        
+        - 日志文件可以有两种扩展名：
+
+          1. xxx.log
+          2. xxx.Nd.log，`N`表示天数，用来标识日志的保存天数
+
+
+          **未标识保存天数的日志文件，运维可以按需要任意清除。**
+
+        - 日志必须按照一定规则进行滚动，以避免单个日志文件过大，影响性能。
+
+          日志可以按天或者按小时滚动，滚动后的日志文件后缀名结尾方式如下：
+
+          1. 按天滚动，xxx.log.20131213
+          2. 按小时滚动，xxx.log.20131213_12
+
+          综上，一个按天滚动、需要保存7天的摘要日志完整文件名是这样的：
+
+          ```
+            xxx-digest.7d.log.20131213
+          ```
+          
+    - 日志格式
+
+        日志需要遵循一定的格式，方便人与机器阅读和分析。日志一般由以下几部分组成：
+
+        1. 时间，一般精确到毫秒
+        2. 日志级别，即`ERROR`、`WARN`、`INFO`、`DEBUG`、`TRACE`
+        3. 唯一ID，一般是贯穿所有上下游系统的唯一ID，如果没有的话也可以是本系统内部的标识
+        4. 线程，输出日志的线程名称
+        5. 日志名称，一般是类名（可以做些限制，避免过长），也可以是特定的名称
+        6. 具体内容
+
+ 
+
+    - 业务日志
+
+            
+      业务日志的格式建议如下：
+
+          时间 级别 [唯一ID][线程] 日志名 - 内容
+
+      例如：
+
+          2013-12-09 18:17:30,110 WARN [1049754451][http-nio-8081-exec-6] c.b.c.b.s.i.XXXServiceImpl - 请求XXX业务处理，传入的参数为空。
+
+
+    - 摘要日志
+
+            
+      大多数摘要日志都是按类型输出到不同文件中的，因此文件就代表了含义，不需要日志名。格式建议如下：
+
+          时间 级别 [唯一ID][线程] - 内容
+
+      不同的类型，内容有所不同，一般摘要可以有以下几类：
+
+      1. 数据层访问摘要，文件名一般为`xxx-dal-digest.log`
+      2. 调用下游服务摘要，文件名一般为`xxx-sal-digest.log`
+      3. 对上游提供服务摘要，文件名一般为`xxx-service-digest.log`
+      4. Web页面访问摘要，文件名一般为`xxx-page-digest.log`
+
+      一般的摘要日志内容中要包含以下内容：
+
+      1. 记录的对象
+      2. 结果，成功或失败
+      3. 耗时
+      4. 参数，用`,`分隔，可选
+      5. 返回值，用`,`分隔，可选
+
+      因此，完整的摘要日志格式会是这样的：
+
+          时间 级别 [唯一ID][线程] - [(对象,结果,耗时)(参数)(返回值)]
+
+      忽略的内容用`-`填充。
+
+      如果摘要是由系统框架级统一输出的，选择同样的级别输出，则可以忽略“级别”一项。
+
+      - 数据层访问摘要
+
+        
+        每次数据库操作建议都记录摘要，以便后续分析系统处理请求过程中的瓶颈，借业务判断数据库状态等等。
+
+              2013-12-09 15:40:55,092 INFO  [1049754451][http-nio-8081-exec-6] - [(UserDao.findByNameAndType, Y, 10ms)(foo,bar)(-)]
+
+
