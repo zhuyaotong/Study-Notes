@@ -25,6 +25,8 @@
 
   - [1.8 并发编程](#18-并发编程)
 
+  - [1.9 日志](#19-日志)
+
 - [2. 重构](#2-重构)
   
   - [2.1 函数](#21-函数)
@@ -331,6 +333,69 @@
               logger.log(e.getMessage());
           }
         ```
+
+      - 给出异常发生的环境说明
+        
+        应创建信息充分的错误信息，并和异常一起传递出去。在消息中，包括失败的操作和失败类型。如果你的应用程序有日志系统，传递足够的信息给catch块，并记录下来。
+          
+      - 依调用者需要定义异常类
+
+        ```java
+          // bad
+          ACMEPort port = new ACMEPort(12);
+          try {
+              port.open();
+          } catch(DeviceResponseException e) {
+              reportPortError(e);
+              logger.log("Device response exception",e);
+          } catch(ATM1212UnlockedException e) {
+              reportPortError(e);
+              logger.log("Unlock exception",e);
+          } catch(GMXError e) {
+              reportPortError(e);
+              logger.log("Device response exception",e);
+          } finally {
+              // .....
+          }
+        ```
+
+        通过打包调用API，确保它返回通过用异常类型，从而简化代码：
+
+        ```java
+          // good
+          LocalPort port = new LocalPort(12);
+          try {
+              port.open();
+          } catch(PortDeviceFailure e) {
+              reportError(e);
+              logger.log(e.getMessage(),e);
+          } finally {
+              // .....
+          }
+
+          public class LocalPort{
+            private ACMEPort innerPort;
+            
+            public LocalPort(int portNumber){
+                innerPort = new ACMEPort(portNumber);
+            }
+            
+            public open() {
+              try {
+                  innerPort.open();
+              } catch(DeviceResponseException e) {
+                      // 自定义的异常类
+                  throw new PortDeviceFailure(e);
+              } catch(ATM1212UnlockedException e) {
+                  throw new PortDeviceFailure(e);
+              } catch(GMXError e) {
+                  throw new PortDeviceFailure(e);
+              }
+            }
+          }
+        ```
+
+        将第三方API打包是个良好的实践手段。当你打包一个第三方API，你就降低了对它的依赖。
 
     - 消除重复
 
@@ -800,6 +865,41 @@
         ```
 
         如果两个线程中共享这个实例对象，那么getNextId返回的结果就有可能不是我们想要的。
+
+
+        
+  - ## 1.9 日志
+
+    - 学习log4j
+
+      - 日志等级
+
+        1. TRACE 在线调试
+
+            默认情况下，即不打印到终端也不输出到文件。对程序的运行效率几乎不产生影响。
+
+        1. DEBUG 终端查看、在线调试
+
+            默认情况下，打印到终端输出，但是不会归档到日志文件。因此，一般用于开发者在程序当前启动窗口上，查看日志的流水信息。
+
+        1. INFO 报告程序进度和状态信息
+
+            一般这种情况都是一次性的，不会大量反复输出。
+          
+        1. WARNING 警告信息
+
+            程序处理中遇到非法数据或者某种可能的错误。该错误是一过性的、可恢复的，不会影响程序的继续运行，程序仍处在正常状态。
+
+        1. ERROR 状态错误
+
+            该错误发生后程序仍然可以运行，但是极有可能运行在某种非正常的状态下，导致无法完成全部既定的功能。
+
+        1. FATAL 致命错误
+
+            表明程序遇到了致命的错误，必须马上终止运行。
+
+        > Log4j建议只使用四个级别，优先级从高到低分别是 
+          ERROR > WARN > INFO > DEBUG
 
 # 2. 重构
 
