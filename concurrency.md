@@ -220,8 +220,6 @@
             private AccountB() {
             }
 
-            ;
-
             // 创建Account时传入同一个lock对象
             public AccountB(Object lock) {
                 this.lock = lock;
@@ -240,3 +238,5 @@
           }
         ```
 
+
+        
