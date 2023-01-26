@@ -42,6 +42,8 @@
 
 - [6. Spring](./spring.md)
 
+- [7. Effective Java](./effective-java.md)
+
   
 # 0. 面向对象设计与实现
   
