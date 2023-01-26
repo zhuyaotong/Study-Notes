@@ -44,6 +44,8 @@
 
 - [7. Effective Java](./effective-java.md)
 
+- [8. Google Java 编程风格指南](./Google-Java-编程风格指南.md)
+
   
 # 0. 面向对象设计与实现
   
