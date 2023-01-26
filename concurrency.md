@@ -2,6 +2,7 @@
 # 目录
 
 - [1. Java 并发编程实战](#1-java-并发编程实战)
+  
   - [1.1 可见性、原子性和有序性](#11-可见性原子性和有序性)
 
 # 1. Java 并发编程实战
@@ -213,20 +214,20 @@
         示例代码如下，我们把 Account 默认构造函数变为 private，同时增加一个带 Object lock 参数的构造函数，创建 Account 对象时，传入相同的 lock，这样所有的 Account 对象都会共享这个 lock 了。
 
         ```java
-          class AccountB {
+          class Account {
             private Object lock;
             private int balance;
 
-            private AccountB() {
+            private Account() {
             }
 
             // 创建Account时传入同一个lock对象
-            public AccountB(Object lock) {
+            public Account(Object lock) {
                 this.lock = lock;
             }
 
             // 转账
-            void transfer(AccountB target, int amt) {
+            void transfer(Account target, int amt) {
                 // 此处检查所有对象共享的锁
                 synchronized (lock) {
                     if (this.balance > amt) {
@@ -238,5 +239,39 @@
           }
         ```
 
+        这个办法确实能解决问题，但是有点小瑕疵，它要求在创建 Account 对象的时候必须传入同一个对象，如果创建 Account 对象时，传入的 lock 不是同一个对象，那可就惨了，会出现锁自家门来保护他家资产的荒唐事。在真实的项目场景中，创建 Account 对象的代码很可能分散在多个工程中，传入共享的 lock 真的很难。
 
-        
+        所以，上面的方案缺乏实践的可行性，我们需要更好的方案。还真有，就是用 Account.class 作为共享的锁。Account.class 是所有 Account 对象共享的，而且这个对象是 Java 虚拟机在加载 Account 类的时候创建的，所以我们不用担心它的唯一性。使用 Account.class 作为共享的锁，我们就无需在创建 Account 对象时传入了，代码更简单。
+
+        ```java
+          class Account {
+            private int balance;
+
+            // 转账
+            void transfer(Account target, int amt) {
+                synchronized (Account.class) {
+                    if (this.balance > amt) {
+                        this.balance -= amt;
+                        target.balance += amt;
+                    }
+                }
+            }
+          }
+        ```
+
+        下面这幅图很直观地展示了我们是如何使用共享的锁 Account.class 来保护不同对象的临界区的。
+
+        <table>
+          <tr>
+            <td align="center" style="width: 800px;">
+              <img src="https://static001.geekbang.org/resource/image/52/7c/527cd65f747abac3f23390663748da7c.png" style="width: 1142px;"><br>
+              <br>
+            </td>
+          </tr>
+        </table>
+
+        总结:
+          相信你看完这篇文章后，对如何保护多个资源已经很有心得了，关键是要分析多个资源之间的关系。如果资源之间没有关系，很好处理，每个资源一把锁就可以了。如果资源之间有关联关系，就要选择一个粒度更大的锁，这个锁应该能够覆盖所有相关的资源。除此之外，还要梳理出有哪些访问路径，所有的访问路径都要设置合适的锁，这个过程可以类比一下门票管理。
+
+          
+
