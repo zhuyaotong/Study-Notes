@@ -1,0 +1,200 @@
+
+# 内容
+
+  - 命名风格
+
+    - 【强制】避免在子父类的成员变量之间、或者不同代码块的局部变量之间采用完全相同的命名，使可理
+       解性降低。
+
+       说明：子类、父类成员变量名相同，即使是 public 也是能够通过编译，而局部变量在同一方法内的不同代码块中同名
+       也是合法的，但是要避免使用。对于非 setter / getter 的参数名称也要避免与成员变量名称相同。
+       反例：
+
+       ```java
+        public class ConfusingName {
+            protected int stock;
+            protected String alibaba;
+
+            // 非 setter/getter 的参数名称，不允许与本类成员变量同名
+            public void access(String alibaba) {
+                if (condition) {
+                    final int money = 666;
+                    // ...
+                }
+                for (int i = 0; i < 10; i++) {
+                    // 在同一方法体中，不允许与其它代码块中的 money 命名相同
+                    final int money = 15978;
+                    // ...
+                }
+            }
+        }
+
+        class Son extends ConfusingName {
+            // 不允许与父类的成员变量名称相同
+            private int stock;
+        }
+       ```
+
+  - 常量定义
+
+    - 【强制】不允许任何魔法值（即未经预先定义的常量）直接出现在代码中。
+
+        反例：
+
+        ```java
+          // 开发者 A 定义了缓存的 key。
+          String key = "Id#taobao_" + tradeId;
+          cache.put(key, value);
+          // 开发者 B 使用缓存时直接复制少了下划线，即 key 是"Id#taobao" + tradeId，导致出现故障。
+          String key = "Id#taobao" + tradeId;
+          cache.get(key);
+        ```
+
+    - 【推荐】如果变量值仅在一个固定范围内变化用 enum 类型来定义。
+          说明：如果存在名称之外的延伸属性应使用 enum 类型，下面正例中的数字就是延伸信息，表示一年中的第几个季节。
+          正例：
+        
+        ```java
+          public enum SeasonEnum {
+            SPRING(1), SUMMER(2), AUTUMN(3), WINTER(4);
+            private int seq;
+
+            SeasonEnum(int seq) {
+                this.seq = seq;
+            }
+
+            public int getSeq() {
+                return seq;
+            }
+          }
+        ```
+
+  - OOP 规约
+
+    - 【强制】浮点数之间的等值判断，基本数据类型不能使用 == 进行比较，包装数据类型不能使用 equals
+      进行判断。
+      说明：浮点数采用“尾数+阶码”的编码方式，类似于科学计数法的“有效数字+指数”的表示方式。二进制无法精确表
+      示大部分的十进制小数，具体原理参考《码出高效》。
+      反例：
+
+      ```java
+        float a = 1.0F - 0.9F;
+        float b = 0.9F - 0.8F;
+        if (a == b) {
+            // 预期进入此代码块，执行其它业务逻辑
+            // 但事实上 a == b 的结果为 false
+            System.out.println("a == b");
+        }
+        Float x = Float.valueOf(a);
+        Float y = Float.valueOf(b);
+        if (x.equals(y)) {
+            // 预期进入此代码块，执行其它业务逻辑
+            // 但事实上 equals 的结果为 false
+            System.out.println("x.equals(y)");
+        }
+      ```
+
+      正例：<br>
+      (1)指定一个误差范围，两个浮点数的差值在此范围之内，则认为是相等的。
+
+      ```java
+        float a = 1.0F - 0.9F;
+        float b = 0.9F - 0.8F;
+        float diff = 1e-6F;
+        if (Math.abs(a - b) < diff) {
+            System.out.println("true");
+        }
+      ```
+
+      (2)使用 BigDecimal 来定义值，再进行浮点数的运算操作。
+
+      ```java
+        BigDecimal a = new BigDecimal("1.0");
+        BigDecimal b = new BigDecimal("0.9");
+        BigDecimal c = new BigDecimal("0.8");
+        BigDecimal x = a.subtract(b);
+        BigDecimal y = b.subtract(c);
+        if (x.compareTo(y) == 0) {
+            System.out.println("true");
+        }
+      ```
+
+    - 【推荐】使用索引访问用 String 的 split 方法得到的数组时，需做最后一个分隔符后有无内容的检查，
+        否则会有抛 IndexOutOfBoundsException 的风险。
+
+      ```java
+        String str = "a,b,c,,";
+        String[] ary = str.split(",");
+        // 预期大于 3，结果等于 3
+        System.out.println(ary.length);
+      ```
+
+    - 【推荐】当一个类有多个构造方法，或者多个同名方法，这些方法应该按顺序放置在一起，便于阅读。
+
+      ```java
+        public int method(int param);
+        protected double method(int param1, int param2);
+        private void method();
+      ```
+
+    - 【推荐】setter 方法中，参数名称与类成员变量名称一致，this.成员名=参数名。在 getter / setter 方
+        法中，不要增加业务逻辑，增加排查问题的难度。<br>
+        反例：
+
+        ```java
+          public Integer getData() {
+              if (condition) {
+                  return this.data + 100;
+              } else {
+                  return this.data - 100;
+              }
+          }
+        ```
+
+    - 【推荐】循环体内，字符串的连接方式，使用 StringBuilder 的 append 方法进行扩展。<br>
+
+      反例：
+      ```java
+        String str = "start";
+        for (int i = 0; i < 100; i++) {
+            str = str + "hello";
+        }
+      ```
+
+  - 日期时间
+
+    - 【强制】禁止在程序中写死一年为 365 天，避免在公历闰年时出现日期转换错误或程序逻辑错误。
+
+      ```java
+        // 获取今年的天数
+        int daysOfThisYear = LocalDate.now().lengthOfYear();
+        System.out.println(daysOfThisYear);
+        // 获取指定某年的天数
+        LocalDate.of(2011, 1, 1).lengthOfYear();
+      ```
+
+      反例：
+
+      ```java
+        // 第一种情况：在闰年 366 天时，出现数组越界异常
+        int[] dayArray = new int[365];
+        // 第二种情况：一年有效期的会员制，2020 年 1 月 26 日注册，硬编码 365 返回的却是 2021 年 1 月 25 日
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(2020, 1, 26);
+        calendar.add(Calendar.DATE, 365);
+      ```
+
+  - 集合处理
+
+    - 【强制】判断所有集合内部的元素是否为空，使用 isEmpty() 方法，而不是 size() == 0 的方式。
+        说明：在某些集合中，前者的时间复杂度为 O(1)，而且可读性更好。
+
+        ```java
+          Map<String, Object> map = new HashMap<>(16);
+          if (map.isEmpty()) {
+              System.out.println("no element in this map.");
+          }
+        ```
+
+    
+
