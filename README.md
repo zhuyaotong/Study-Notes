@@ -7,6 +7,8 @@
 
   - [0.2 特性](#02-特性)
 
+  - [0.3 实践](#03-实践)
+
 - [1. 代码整洁之道](#1-代码整洁之道)
   
   - [1.1 取名](#11-取名)
@@ -86,6 +88,146 @@
           - 我们以为继承主要是为了代码重用，但实际上在子类中需要重新实现很多父类的方法。
         
           - 继承更多的应该是为了多态。
+
+          
+  - ## 0.3 实践
+
+    - 多用组合少用继承
+
+      我们知道，大部分鸟都会飞，那我们可不可以在 AbstractBird 抽象类中，定义一个 fly() 方法呢？答案是否定的。尽管大部分鸟都会飞，但也有特例，比如鸵鸟就不会飞。鸵鸟继承具有 fly() 方法的父类，那鸵鸟就具有“飞”这样的行为，这显然不符合我们对现实世界中事物的认识。当然，你可能会说，我在鸵鸟这个子类中重写（override）fly() 方法，让它抛出 UnSupportedMethodException 异常不就可以了吗？具体的代码实现如下所示：
+
+      ```java
+        
+        public class AbstractBird {
+          //...省略其他属性和方法...
+          public void fly() { //... }
+        }
+
+        public class Ostrich extends AbstractBird { //鸵鸟
+          //...省略其他属性和方法...
+          public void fly() {
+            throw new UnSupportedMethodException("I can't fly.'");
+          }
+        }
+      ```
+
+      这种设计思路虽然可以解决问题，但不够优美。因为除了鸵鸟之外，不会飞的鸟还有很多，比如企鹅。对于这些不会飞的鸟来说，我们都需要重写 fly() 方法，抛出异常。这样的设计，一方面，徒增了编码的工作量；另一方面，也违背了我们之后要讲的最小知识原则（Least Knowledge Principle，也叫最少知识原则或者迪米特法则），暴露不该暴露的接口给外部，增加了类使用过程中被误用的概率。
+
+    - 组合相比继承有哪些优势？
+
+      针对“会飞”这样一个行为特性，我们可以定义一个 Flyable 接口，只让会飞的鸟去实现这个接口。对于会叫、会下蛋这些行为特性，我们可以类似地定义 Tweetable 接口、EggLayable 接口。我们将这个设计思路翻译成 Java 代码的话，就是下面这个样子：
+
+      ```java
+        public interface Flyable {
+          void fly();
+        }
+        public interface Tweetable {
+          void tweet();
+        }
+        public interface EggLayable {
+          void layEgg();
+        }
+        public class Ostrich implements Tweetable, EggLayable {//鸵鸟
+          //... 省略其他属性和方法...
+          @Override
+          public void tweet() { //... }
+          @Override
+          public void layEgg() { //... }
+        }
+        public class Sparrow implements Flyable, Tweetable, EggLayable {//麻雀
+          //... 省略其他属性和方法...
+          @Override
+          public void fly() { //... }
+          @Override
+          public void tweet() { //... }
+          @Override
+          public void layEgg() { //... }
+        }
+      ```
+
+      不过，我们知道，接口只声明方法，不定义实现。也就是说，每个会下蛋的鸟都要实现一遍 layEgg() 方法，并且实现逻辑是一样的，这就会导致代码重复的问题。那这个问题又该如何解决呢？
+
+      我们可以针对三个接口再定义三个实现类，它们分别是：实现了 fly() 方法的 FlyAbility 类、实现了 tweet() 方法的 TweetAbility 类、实现了 layEgg() 方法的 EggLayAbility 类。然后，通过组合和委托技术来消除代码重复。具体的代码实现如下所示：
+
+      ```java
+        public interface Flyable {
+          void fly()；
+        }
+        public class FlyAbility implements Flyable {
+          @Override
+          public void fly() { //... }
+        }
+        //省略Tweetable/TweetAbility/EggLayable/EggLayAbility
+
+        public class Ostrich implements Tweetable, EggLayable {//鸵鸟
+          private TweetAbility tweetAbility = new TweetAbility(); //组合
+          private EggLayAbility eggLayAbility = new EggLayAbility(); //组合
+          //... 省略其他属性和方法...
+          @Override
+          public void tweet() {
+            tweetAbility.tweet(); // 委托
+          }
+          @Override
+          public void layEgg() {
+            eggLayAbility.layEgg(); // 委托
+          }
+        }
+      ```
+
+      我们知道继承主要有三个作用：表示 is-a 关系，支持多态特性，代码复用。而这三个作用都可以通过其他技术手段来达成。比如 is-a 关系，我们可以通过组合和接口的 has-a 关系来替代；多态特性我们可以利用接口来实现；代码复用我们可以通过组合和委托来实现。所以，从理论上讲，通过组合、接口、委托三个技术手段，我们完全可以替换掉继承，在项目中不用或者少用继承关系，特别是一些复杂的继承关系。
+
+    - 如何判断该用组合还是继承？
+
+      前面我们讲到继承可以实现代码复用。利用继承特性，我们把相同的属性和方法，抽取出来，定义到父类中。子类复用父类中的属性和方法，达到代码复用的目的。但是，有的时候，从业务含义上，A 类和 B 类并不一定具有继承关系。比如，Crawler 类和 PageAnalyzer 类，它们都用到了 URL 拼接和分割的功能，但并不具有继承关系（既不是父子关系，也不是兄弟关系）。仅仅为了代码复用，生硬地抽象出一个父类出来，会影响到代码的可读性。如果不熟悉背后设计思路的同事，发现 Crawler 类和 PageAnalyzer 类继承同一个父类，而父类中定义的却只是 URL 相关的操作，会觉得这个代码写得莫名其妙，理解不了。这个时候，使用组合就更加合理、更加灵活。具体的代码实现如下所示：
+
+      ```java
+        public class Url {
+          //...省略属性和方法
+        }
+
+        public class Crawler {
+          private Url url; // 组合
+          public Crawler() {
+            this.url = new Url();
+          }
+          //...
+        }
+
+        public class PageAnalyzer {
+          private Url url; // 组合
+          public PageAnalyzer() {
+            this.url = new Url();
+          }
+          //..
+        }
+      ```
+
+      还有一些特殊的场景要求我们必须使用继承。如果你不能改变一个函数的入参类型，而入参又非接口，为了支持多态，只能采用继承来实现。比如下面这样一段代码，其中 FeignClient 是一个外部类，我们没有权限去修改这部分代码，但是我们希望能重写这个类在运行时执行的 encode() 函数。这个时候，我们只能采用继承来实现了。
+
+      ```java
+        public class FeignClient { // Feign Client框架代码
+          //...省略其他代码...
+          public void encode(String url) { //... }
+        }
+
+        public void demofunction(FeignClient feignClient) {
+          //...
+          feignClient.encode(url);
+          //...
+        }
+
+        public class CustomizedFeignClient extends FeignClient {
+          @Override
+          public void encode(String url) { //...重写encode的实现...}
+        }
+
+        // 调用
+        FeignClient client = new CustomizedFeignClient();
+        demofunction(client);
+      ```
+
+      尽管有些人说，要杜绝继承，100% 用组合代替继承，但是我的观点没那么极端！之所以“多用组合少用继承”这个口号喊得这么响，只是因为，长期以来，我们过度使用继承。还是那句话，组合并不完美，继承也不是一无是处。只要我们控制好它们的副作用、发挥它们各自的优势，在不同的场合下，恰当地选择使用继承还是组合，这才是我们所追求的境界。
+
 
 # 1. 代码整洁之道
 
