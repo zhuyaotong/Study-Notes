@@ -40,6 +40,8 @@
 
   - [4.1 日志规范](#41-日志规范)
 
+  - [4.2 RESTful规范](./RESTful规范.md)
+
 - [5. Java 并发编程实战](./concurrency.md)
 
 - [6. Spring](./spring.md)
