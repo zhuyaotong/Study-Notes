@@ -17,6 +17,8 @@
 
   - [8. 异常处理](#8-异常处理)
 
+  - [9. 日志规约](#9-日志规约)
+
   ## 1. 命名风格
     
   - 【强制】避免在子父类的成员变量之间、或者不同代码块的局部变量之间采用完全相同的命名，使可理
@@ -313,5 +315,57 @@
           return ++x;
         }
       }
+    ```
+
+  ## 9. 日志规约
+
+  - 【强制】应用中不可直接使用日志系统（Log4j、Logback）中的 API，而应依赖使用日志框架（SLF4J、
+    JCL—Jakarta Commons Logging）中的 API，使用门面模式的日志框架，有利于维护和各个类的日志处理方式统一。
+    说明：日志框架（SLF4J、JCL--Jakarta Commons Logging）的使用方式（推荐使用 SLF4J）
+
+    使用 SLF4J：<br>
+    ```java
+      import org.slf4j.Logger;
+      import org.slf4j.LoggerFactory;
+      private static final Logger logger = LoggerFactory.getLogger(Test.class);
+    ```
+    
+    使用 JCL：<br>
+    ```java
+      import org.apache.commons.logging.Log;
+      import org.apache.commons.logging.LogFactory;
+      private static final Log log = LogFactory.getLog(Test.class);
+    ```
+    
+  - 【强制】日志文件至少保存 15 天，因为有些异常具备以“周”为频次发生的特点。对于当天日志，以
+    “应用名.log”来保存，保存在/{统一目录}/{应用名}/logs/目录下，过往日志格式为：
+    {logname}.log.{保存日期}，日期格式：yyyy-MM-dd
+    正例：以 mppserver 应用为例，日志保存/home/admin/mppserver/logs/mppserver.log，历史日志名称
+    为 mppserver.log.2021-11-28  
+
+  - 【强制】在日志输出时，字符串变量之间的拼接使用占位符的方式。
+  说明：因为 String 字符串的拼接会使用 StringBuilder 的 append() 方式，有一定的性能损耗。使用占位符仅是替换动作，可以有效提升性能。
+  正例：<br>
+    ```java
+      logger.debug("Processing trade with id : {} and symbol : {}", id, symbol);
+    ```
+  
+  - 【强制】对于 trace / debug / info 级别的日志输出，必须进行日志级别的开关判断：
+  说明：虽然在 debug(参数) 的方法体内第一行代码 isDisabled(Level.DEBUG_INT) 为真时（Slf4j 的常见实现 Log4j 和
+  Logback），就直接 return，但是参数可能会进行字符串拼接运算。此外，如果 debug(getName()) 这种参数内有
+  getName() 方法调用，无谓浪费方法调用的开销。
+  正例：<br>
+    ```java
+      // 如果判断为真，那么可以输出 trace 和 debug 级别的日志
+      if (logger.isDebugEnabled()) {
+        logger.debug("Current ID is: {} and name is: {}", id, getName());
+      }
+    ```
+
+  - 【强制】异常信息应该包括两类信息：案发现场信息和异常堆栈信息。如果不处理，那么通过关键字
+  throws 往上抛出。
+  正例：<br>
+    ```java
+      logger.error("inputParams: {} and errorMessage: {}", 各类参数或者对象 toString(), e.getMessage(), e);
     ```
 
