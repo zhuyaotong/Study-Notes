@@ -15,6 +15,8 @@
 
   - [7. 单元测试](#7-单元测试)
 
+  - [8. 异常处理](#8-异常处理)
+
   ## 1. 命名风格
     
   - 【强制】避免在子父类的成员变量之间、或者不同代码块的局部变量之间采用完全相同的命名，使可理
@@ -283,4 +285,33 @@
   ⚫ D：Design，与设计文档相结合，来编写单元测试。<br>
   ⚫ E：Error，强制错误信息输入（如：非法数据、异常流程、业务允许外等），并得到预期的结果。
 
-  
+  ## 8. 异常处理   
+
+  - 【强制】Java 类库中定义的可以通过预检查方式规避的 RuntimeException 异常不应该通过 catch 的方
+      式来处理，比如：NullPointerException，IndexOutOfBoundsException 等等。
+      说明：无法通过预检查的异常除外，比如，在解析字符串形式的数字时，可能存在数字格式错误，不得不通过 catch
+      NumberFormatException 来实现。
+
+    正例：if (obj != null) {...}<br>
+    反例：try { obj.method(); } catch (NullPointerException e) {…}
+
+  - 强制】finally 块必须对资源对象、流对象进行关闭，有异常也要做 try-catch。
+    说明：如果 JDK7，可以使用 try-with-resources 方式。
+
+  - 【强制】不要在 finally 块中使用 return
+    说明：try 块中的 return 语句执行成功后，并不马上返回，而是继续执行 finally 块中的语句，如果此处存在 return 语句，
+    则会在此直接返回，无情丢弃掉 try 块中的返回点。<br>
+    反例：<br>
+    ```java
+      private int x = 0;
+      public int checkReturn() {
+        try {
+          // x 等于 1，此处不返回
+          return ++x;
+        } finally {
+          // 返回的结果是 2
+          return ++x;
+        }
+      }
+    ```
+
