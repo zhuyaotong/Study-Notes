@@ -1,9 +1,19 @@
 
-# 内容
+# Java 开发手册
 
-  - 命名风格
+  - [1. 命名风格](#1-命名风格)
 
-    - 【强制】避免在子父类的成员变量之间、或者不同代码块的局部变量之间采用完全相同的命名，使可理
+  - [2. 常量定义](#2-常量定义)
+
+  - [3. OOP规约](#3-oop规约)
+
+  - [4. 日期时间](#4-日期时间)
+
+  - [5. 集合处理](#5-集合处理)
+
+  ## 1. 命名风格
+    
+  - 【强制】避免在子父类的成员变量之间、或者不同代码块的局部变量之间采用完全相同的命名，使可理
        解性降低。
 
        说明：子类、父类成员变量名相同，即使是 public 也是能够通过编译，而局部变量在同一方法内的不同代码块中同名
@@ -35,43 +45,43 @@
         }
        ```
 
-  - 常量定义
+  ## 2. 常量定义
+  
+  - 【强制】不允许任何魔法值（即未经预先定义的常量）直接出现在代码中。
 
-    - 【强制】不允许任何魔法值（即未经预先定义的常量）直接出现在代码中。
+      反例：
 
-        反例：
+      ```java
+        // 开发者 A 定义了缓存的 key。
+        String key = "Id#taobao_" + tradeId;
+        cache.put(key, value);
+        // 开发者 B 使用缓存时直接复制少了下划线，即 key 是"Id#taobao" + tradeId，导致出现故障。
+        String key = "Id#taobao" + tradeId;
+        cache.get(key);
+      ```
 
-        ```java
-          // 开发者 A 定义了缓存的 key。
-          String key = "Id#taobao_" + tradeId;
-          cache.put(key, value);
-          // 开发者 B 使用缓存时直接复制少了下划线，即 key 是"Id#taobao" + tradeId，导致出现故障。
-          String key = "Id#taobao" + tradeId;
-          cache.get(key);
-        ```
-
-    - 【推荐】如果变量值仅在一个固定范围内变化用 enum 类型来定义。
+  - 【推荐】如果变量值仅在一个固定范围内变化用 enum 类型来定义。
           说明：如果存在名称之外的延伸属性应使用 enum 类型，下面正例中的数字就是延伸信息，表示一年中的第几个季节。
           正例：
         
-        ```java
-          public enum SeasonEnum {
-            SPRING(1), SUMMER(2), AUTUMN(3), WINTER(4);
-            private int seq;
+      ```java
+        public enum SeasonEnum {
+          SPRING(1), SUMMER(2), AUTUMN(3), WINTER(4);
+          private int seq;
 
-            SeasonEnum(int seq) {
-                this.seq = seq;
-            }
-
-            public int getSeq() {
-                return seq;
-            }
+          SeasonEnum(int seq) {
+              this.seq = seq;
           }
-        ```
 
-  - OOP 规约
+          public int getSeq() {
+              return seq;
+          }
+        }
+      ```
 
-    - 【强制】浮点数之间的等值判断，基本数据类型不能使用 == 进行比较，包装数据类型不能使用 equals
+  ## 3. OOP规约
+  
+  - 【强制】浮点数之间的等值判断，基本数据类型不能使用 == 进行比较，包装数据类型不能使用 equals
       进行判断。
       说明：浮点数采用“尾数+阶码”的编码方式，类似于科学计数法的“有效数字+指数”的表示方式。二进制无法精确表
       示大部分的十进制小数，具体原理参考《码出高效》。
@@ -119,51 +129,51 @@
         }
       ```
 
-    - 【推荐】使用索引访问用 String 的 split 方法得到的数组时，需做最后一个分隔符后有无内容的检查，
-        否则会有抛 IndexOutOfBoundsException 的风险。
+  - 【推荐】使用索引访问用 String 的 split 方法得到的数组时，需做最后一个分隔符后有无内容的检查，
+      否则会有抛 IndexOutOfBoundsException 的风险。
 
-      ```java
-        String str = "a,b,c,,";
-        String[] ary = str.split(",");
-        // 预期大于 3，结果等于 3
-        System.out.println(ary.length);
-      ```
+    ```java
+      String str = "a,b,c,,";
+      String[] ary = str.split(",");
+      // 预期大于 3，结果等于 3
+      System.out.println(ary.length);
+    ```
 
-    - 【推荐】当一个类有多个构造方法，或者多个同名方法，这些方法应该按顺序放置在一起，便于阅读。
+  - 【推荐】当一个类有多个构造方法，或者多个同名方法，这些方法应该按顺序放置在一起，便于阅读。
 
-      ```java
-        public int method(int param);
-        protected double method(int param1, int param2);
-        private void method();
-      ```
+    ```java
+      public int method(int param);
+      protected double method(int param1, int param2);
+      private void method();
+    ```
 
-    - 【推荐】setter 方法中，参数名称与类成员变量名称一致，this.成员名=参数名。在 getter / setter 方
-        法中，不要增加业务逻辑，增加排查问题的难度。<br>
-        反例：
-
-        ```java
-          public Integer getData() {
-              if (condition) {
-                  return this.data + 100;
-              } else {
-                  return this.data - 100;
-              }
-          }
-        ```
-
-    - 【推荐】循环体内，字符串的连接方式，使用 StringBuilder 的 append 方法进行扩展。<br>
-
+  - 【推荐】setter 方法中，参数名称与类成员变量名称一致，this.成员名=参数名。在 getter / setter 方
+      法中，不要增加业务逻辑，增加排查问题的难度。<br>
       反例：
+
       ```java
-        String str = "start";
-        for (int i = 0; i < 100; i++) {
-            str = str + "hello";
+        public Integer getData() {
+            if (condition) {
+                return this.data + 100;
+            } else {
+                return this.data - 100;
+            }
         }
       ```
 
-  - 日期时间
+  - 【推荐】循环体内，字符串的连接方式，使用 StringBuilder 的 append 方法进行扩展。<br>
 
-    - 【强制】禁止在程序中写死一年为 365 天，避免在公历闰年时出现日期转换错误或程序逻辑错误。
+    反例：
+    ```java
+      String str = "start";
+      for (int i = 0; i < 100; i++) {
+          str = str + "hello";
+      }
+    ```
+
+  ## 4. 日期时间
+  
+  - 【强制】禁止在程序中写死一年为 365 天，避免在公历闰年时出现日期转换错误或程序逻辑错误。
 
       ```java
         // 获取今年的天数
@@ -184,9 +194,9 @@
         calendar.add(Calendar.DATE, 365);
       ```
 
-  - 集合处理
-
-    - 【强制】判断所有集合内部的元素是否为空，使用 isEmpty() 方法，而不是 size() == 0 的方式。
+  ## 5. 集合处理
+  
+   - 【强制】判断所有集合内部的元素是否为空，使用 isEmpty() 方法，而不是 size() == 0 的方式。
         说明：在某些集合中，前者的时间复杂度为 O(1)，而且可读性更好。
 
         ```java
