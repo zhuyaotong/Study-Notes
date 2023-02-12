@@ -214,6 +214,47 @@
           }
         ```
 
+  - 【强制】在使用 java.util.stream.Collectors 类的 toMap() 方法转为 Map 集合时，一定要使用参数类型
+  为 BinaryOperator，参数名为 mergeFunction 的方法，否则当出现相同 key 时会抛出
+  IllegalStateException 异常。
+  说明：参数 mergeFunction 的作用是当出现 key 重复时，自定义对 value 的处理策略。
+  正例：<br>
+    ```java
+      List<Pair<String, Double>> pairArrayList = new ArrayList<>(3);
+      pairArrayList.add(new Pair<>("version", 12.10));
+      pairArrayList.add(new Pair<>("version", 12.19));
+      pairArrayList.add(new Pair<>("version", 6.28));
+      // 生成的 map 集合中只有一个键值对：{version=6.28}
+      Map<String, Double> map = pairArrayList.stream()
+        .collect(Collectors.toMap(Pair::getKey, Pair::getValue, (v1, v2) -> v2));
+    ```
+
+    反例：<br>
+    ```java
+      String[] departments = new String[]{"RDC", "RDC", "KKB"};
+      // 抛出 IllegalStateException 异常
+      Map<Integer, String> map = Arrays.stream(departments)
+        .collect(Collectors.toMap(String::hashCode, str -> str));
+    ```
+
+  - 【强制】在使用 java.util.stream.Collectors 类的 toMap() 方法转为 Map 集合时，一定要注意当 value
+    为 null 时会抛 NPE 异常。<br>
+    说明：在 java.util.HashMap 的 merge 方法里会进行如下的判断：<br>
+    ```java
+      if (value == null || remappingFunction == null)
+        throw new NullPointerException();
+    ```
+
+    反例：<br>
+    ```java
+      List<Pair<String, Double>> pairArrayList = new ArrayList<>(2);
+      pairArrayList.add(new Pair<>("version1", 8.3));
+      pairArrayList.add(new Pair<>("version2", null));
+      // 抛出 NullPointerException 异常
+      Map<String, Double> map = pairArrayList.stream()
+        .collect(Collectors.toMap(Pair::getKey, Pair::getValue, (v1, v2) -> v2));
+    ```
+
   ## 6. MySQL数据库
 
   - 【参考】合适的字符存储长度，不但节约数据库表空间、节约索引存储，更重要的是提升检索速度。<br>
