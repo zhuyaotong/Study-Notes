@@ -19,6 +19,8 @@
 
   - [9. 日志规约](#9-日志规约)
 
+  - [10. 并发处理](#10-并发处理)
+
   ## 1. 命名风格
     
   - 【强制】避免在子父类的成员变量之间、或者不同代码块的局部变量之间采用完全相同的命名，使可理
@@ -255,6 +257,86 @@
         .collect(Collectors.toMap(Pair::getKey, Pair::getValue, (v1, v2) -> v2));
     ```
 
+  - 【强制】使用集合转数组的方法，必须使用集合的 toArray(T[] array)，传入的是类型完全一致、长度为
+    0 的空数组。
+    反例：直接使用 toArray 无参方法存在问题，此方法返回值只能是 Object[]类，若强转其它类型数组将出现
+    ClassCastException 错误。<br>
+    正例：<br>
+    ```java
+      List<String> list = new ArrayList<>(2);
+      list.add("guan");
+      list.add("bao");
+      String[] array = list.toArray(new String[0]);
+    ```
+    说明：<br>
+      使用 toArray 带参方法，数组空间大小的 length：<br>
+        1）等于 0，动态创建与 size 相同的数组，性能最好。<br>
+        2）大于 0 但小于 size，重新创建大小等于 size 的数组，增加 GC 负担。<br>
+        3）等于 size，在高并发情况下，数组创建完成之后，size 正在变大的情况下，负面影响与 2 相同。<br>
+        4）大于 size，空间浪费，且在 size 处插入 null 值，存在 NPE 隐患。
+
+  - 【强制】使用工具类 Arrays.asList() 把数组转换成集合时，不能使用其修改集合相关的方法，它的 add
+    / remove / clear 方法会抛出 UnsupportedOperationException 异常。
+    说明：asList 的返回对象是一个 Arrays 内部类，并没有实现集合的修改方法。Arrays.asList 体现的是适配器模式，只
+    是转换接口，后台的数据仍是数组。
+
+    ```java
+      String[] str = new String[]{ "yang", "guan", "bao" };
+      List list = Arrays.asList(str);
+    ```
+    第一种情况：list.add("yangguanbao"); 运行时异常。<br>
+    第二种情况：str[0] = "change"; list 中的元素也会随之修改，反之亦然。
+
+  - 【强制】在无泛型限制定义的集合赋值给泛型限制的集合时，在使用集合元素时，需要进行
+    instanceof 判断，避免抛出 ClassCastException 异常。
+    说明：毕竟泛型是在 JDK5 后才出现，考虑到向前兼容，编译器是允许非泛型集合与泛型集合互相赋值。
+    反例：<br>
+    ```java
+      List<String> generics = null;
+      List notGenerics = new ArrayList(10);
+      notGenerics.add(new Object());
+      notGenerics.add(new Integer(1));
+      generics = notGenerics;
+      // 此处抛出 ClassCastException 异常
+      String string = generics.get(0);
+    ```
+
+  - 【强制】不要在 foreach 循环里进行元素的 remove / add 操作。remove 元素请使用 iterator 方式，
+    如果并发操作，需要对 iterator 对象加锁。<br>
+    正例：<br>
+    ```java
+      List<String> list = new ArrayList<>();
+        list.add("1");
+        list.add("2");
+        Iterator<String> iterator = list.iterator();
+        while (iterator.hasNext()) {
+            String item = iterator.next();
+            if (删除元素的条件) {
+                iterator.remove();
+            }
+        }
+    ```
+    反例：<br>
+    ```java
+      for (String item : list) {
+            if ("2".equals(item)) {
+                list.remove(item);
+            }
+        }
+    ```
+
+  - 【推荐】高度注意 Map 类集合 K / V 能不能存储 null 值的情况，如下表格：<br>
+        
+    | 集合类  | Key | Value | Super | 说明 |
+    |---------|----------|---------|----------------------------------------------------------|-|
+    | Hashtable     |    不允许为 null    |    不允许为 null    | Dictionary | 线程安全 |
+    | TreeMap    |    不允许为 null    |    允许为 null    | AbstractMap | 线程不安全 |
+    | ConcurrentHashMap  |    不允许为 null    |    不允许为 null    | AbstractMap | 锁分段技术（JDK8:CAS） |
+    | HashMap     |    允许为 null    |    允许为 null    | AbstractMap | 线程不安全 |
+
+    反例：由于 HashMap 的干扰，很多人认为 ConcurrentHashMap 是可以置入 null 值，而事实上，存储 null 值时会抛
+    出 NPE 异常。
+
   ## 6. MySQL数据库
 
   - 【参考】合适的字符存储长度，不但节约数据库表空间、节约索引存储，更重要的是提升检索速度。<br>
@@ -410,3 +492,25 @@
       logger.error("inputParams: {} and errorMessage: {}", 各类参数或者对象 toString(), e.getMessage(), e);
     ```
 
+## 10. 并发处理
+
+  - 【强制】创建线程或线程池时请指定有意义的线程名称，方便出错时回溯。<br>
+    正例：自定义线程工厂，并且根据外部特征进行分组，比如，来自同一机房的调用，把机房编号赋值给
+    whatFeatureOfGroup：
+    ```java
+      public class UserThreadFactory implements ThreadFactory {
+        private final String namePrefix;
+        private final AtomicInteger nextId = new AtomicInteger(1);
+        // 定义线程组名称，在利用 jstack 来排查问题时，非常有帮助
+        UserThreadFactory(String whatFeatureOfGroup) {
+          namePrefix = "FromUserThreadFactory's " + whatFeatureOfGroup + "-Worker-";
+        }
+        @Override
+        public Thread newThread(Runnable task) {
+          String name = namePrefix + nextId.getAndIncrement();
+          Thread thread = new Thread(null, task, name, 0, false);
+          System.out.println(thread.getName());
+          return thread;
+        }
+      }
+    ```
