@@ -21,6 +21,8 @@
 
   - [10. 并发处理](#10-并发处理)
 
+  - [11. 控制语句](#11-控制语句)
+
   ## 1. 命名风格
     
   - 【强制】避免在子父类的成员变量之间、或者不同代码块的局部变量之间采用完全相同的命名，使可理
@@ -594,3 +596,79 @@
     AtomicInteger count = new AtomicInteger();
     count.addAndGet(1);
     如果是 JDK8，推荐使用 LongAdder 对象，比 AtomicLong 性能更好（减少乐观锁的重试次数）。
+
+## 11. 控制语句
+
+  - 【强制】当 switch 括号内的变量类型为 String 并且此变量为外部参数时，必须先进行 null 判断。<br>
+    反例：如下的代码输出是什么？
+    ```java
+      public class SwitchString {
+        public static void main(String[] args) {
+            method(null);
+        }
+
+        public static void method(String param) {
+            switch (param) {
+                // 肯定不是进入这里
+                case "sth":
+                    System.out.println("it's sth");
+                    break;
+                // 也不是进入这里
+                case "null":
+                    System.out.println("it's null");
+                    break;
+                // 也不是进入这里
+                default:
+                    System.out.println("default");
+            }
+        }
+    }
+    ```
+  
+  - 【强制】三目运算符 condition ? 表达式 1：表达式 2 中，高度注意表达式 1 和 2 在类型对齐时，可能
+    抛出因自动拆箱导致的 NPE 异常。
+    说明：以下两种场景会触发类型对齐的拆箱操作：<br>
+    1）表达式 1 或 表达式 2 的值只要有一个是原始类型。<br>
+    2）表达式 1 或 表达式 2 的值的类型不一致，会强制拆箱升级成表示范围更大的那个类型。<br>
+    反例：
+    ```java
+      Integer a = 1;
+      Integer b = 2;
+      Integer c = null;
+      Boolean flag = false;
+      // a*b 的结果是 int 类型，那么 c 会强制拆箱成 int 类型，抛出 NPE 异常
+      Integer result = (flag ? a * b : c);
+    ```
+
+  - 【推荐】表达异常的分支时，少用 if-else 方式，这种方式可以改写成：
+      ```java
+        if (condition) {
+          ...
+          return obj;
+        }
+        // 接着写 else 的业务逻辑代码;
+      ```
+      说明：如果非使用 if()...else if()...else...方式表达逻辑，避免后续代码维护困难，请勿超过 3 层。<br>
+      正例：超过 3 层的 if-else 的逻辑判断代码可以使用卫语句、策略模式、状态模式等来实现，其中卫语句示例如下：
+      ```java
+        public void findBoyfriend(Man man) {
+          if (man.isUgly()) {
+              System.out.println("本姑娘是外貌协会的资深会员");
+              return;
+          }
+          if (man.isPoor()) {
+              System.out.println("贫贱夫妻百事哀");
+              return;
+          }
+          if (man.isBadTemper()) {
+              System.out.println("银河有多远，你就给我滚多远");
+              return;
+          }
+          System.out.println("可以先交往一段时间看看");
+        }
+      ```
+
+  - 【推荐】避免采用取反逻辑运算符。<br>
+      说明：取反逻辑不利于快速理解，并且取反逻辑写法一般都存在对应的正向逻辑写法。<br>
+      正例：使用 if(x < 628) 来表达 x 小于 628。<br>
+      反例：使用 if(!(x >= 628)) 来表达 x 小于 628。
