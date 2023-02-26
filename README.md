@@ -87,6 +87,8 @@
     - [13.2.2 维基百科的SQL JOIN](./数据库基础知识.md/#1322-维基百科的sql-join)
 
 - [14. Git and Git Flow 备忘单](./Git-and-Git-Flow-Cheat-Sheet.md)
+
+- [15. Git 的奇技淫巧](./Git的奇技淫巧.md)
   
 # 0. 面向对象设计与实现
   
