@@ -44,7 +44,13 @@
 
 - [5. Java 并发编程实战](./concurrency.md)
 
-- [6. Spring](./spring.md)
+- [6. Spring](./spring.md/#6-spring)
+
+  - [6.1 IoC 容器（控制反转容器（依赖注入））](./spring.md/#61-ioc-容器控制反转容器依赖注入)
+
+  - [6.2 Spring常用注解](./spring.md/#62-spring常用注解)
+
+  - [6.3 20%的业务代码的Spring声明式事务，可能都没处理正确](./spring.md/#63-20的业务代码的spring声明式事务可能都没处理正确)
 
 - [7. Effective Java](./effective-java.md)
 
