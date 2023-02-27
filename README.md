@@ -74,6 +74,8 @@
 
   - [11.6 充血模型的 DDD 开发模式](./经验套路.md#116-充血模型的-ddd-开发模式)
 
+  - [11.7 IoC容器和Dependency Injection模式](./经验套路.md#117-ioc容器和dependency-injection模式)
+
 - [12. Java基础知识](./Java基础知识.md#12-Java基础知识)
 
 - [13. 数据库基础知识](./数据库基础知识.md/#13-数据库基础知识)
